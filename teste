@@ -1,0 +1,98 @@
+#Contagem da produção
+                    
+                #ID UTILIZADO PARA IDENTIFICAR CADA OBJETO NO FRAME CASO TENHA MAIS DE UM
+                i = 0
+                for cnt in frame:
+                    print(bounding_boxes)
+
+                                
+                    #parametros para calcular o centro do retangulo
+                    centro = int(box_current[2]/2), int(box_current[3]/2)
+
+                    #circulo no centro
+                    cv2.circle(frame, centro, 4, (0, 0,255), -1)
+                                                        
+                    #DETECTS É UMA VARIAVEL DE ARRAYS, PARA CADA ARRAY SERÃO ARMAZENADOS OS VALORES DO CENTRO DO OBJETO EM CADA FRAME
+                    if len(detects) <= i:
+                        #adiciona um array para o bjeto detectado para ser armazenado o valor dos seus centros por frame
+                        detects.append([])
+                                    
+                    #CENTRO[0] = X, POSL-OFFSET = LINHA DA ESQUERDA, POSL_OFFSET = LINHA DA DIREITA
+                    #SE SE POSIÇÃO DE X FOR MAIOR QUE A LINHA DA ESQUERDA E MENOS QUE A LINHA DA DIREITA O OBJETO ESTÁ DENTRO A ÁREA DE CONTAGEM A SER RASTREADO
+                    if centro[0]> posL-offset and centro[0] < posL+offset:
+                        detects[i].append(centro)
+                        #print(detects)
+                    else:
+                        detects[i].clear()
+                    i += 1
+                    #print(i) 
+
+
+
+
+
+#objetos que recebem atributos da função de contorno do OpenCv
+                #CLOSING POIS É A IMAGEM QUE QUERO CONTORNAR
+                #A FUNÇÃO RETR_TREE RECUPERA OS CONTORNOS E CRIA UMA HIERARQUIA FAMILIAR
+                _, contours, hierarchy = cv2.findContours(closing,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+
+                #ID UTILIZADO PARA IDENTIFICAR CADA OBJETO NO FRAME CASO TENHA MAIS DE UM
+                i = 0
+                for cnt in contours:
+                    #determina o tamanho do retangulo envolta do objeto
+                    (x,y,w,h) = cv2.boundingRect(cnt)
+
+                    #calcula a área do objeto
+                    area = cv2.contourArea(cnt)
+                            
+                    #DETERMINA O TAMANHO MINIMO DA AREA DO OBJETO A SER DETECTADO
+                    if int(area) > 100 :
+                        #parametros para calcular o centro do retangulo
+                        centro = center(x, y, w, h)
+                        #Texto de numeração do retangulo do objeto
+                        cv2.putText(frame, str(i), (x+5, y+15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255),2)
+
+                        #circulo no centro
+                        cv2.circle(frame, centro, 4, (0, 0,255), -1)
+                        #RETANDULO EM VOLTA DO OBJETO
+                        cv2.rectangle(frame,(x,y),(x+w,y+h),(0,255,0),2)
+                                
+                        #DETECTS É UMA VARIAVEL DE ARRAYS, PARA CADA ARRAY SERÃO ARMAZENADOS OS VALORES DO CENTRO DO OBJETO EM CADA FRAME
+                        if len(detects) <= i:
+                            #adiciona um array para o bjeto detectado para ser armazenado o valor dos seus centros por frame
+                            detects.append([])
+                                
+                        #CENTRO[0] = X, POSL-OFFSET = LINHA DA ESQUERDA, POSL_OFFSET = LINHA DA DIREITA
+                        #SE SE POSIÇÃO DE X FOR MAIOR QUE A LINHA DA ESQUERDA E MENOS QUE A LINHA DA DIREITA O OBJETO ESTÁ DENTRO A ÁREA DE CONTAGEM A SER RASTREADO
+                        if centro[0]> posL-offset and centro[0] < posL+offset:
+                            detects[i].append(centro)
+                            #print(detects)
+                        else:
+                            detects[i].clear()
+                        i += 1
+
+                #CASO NÃO TENHA NENHUM OBJETO NO FRAME
+                if i == 0:
+                    detects.clear()
+
+                i = 0
+                #SE NÃO TIVER NENHUM CONTORNO, SEM OBJETOS PASSANDO, LIMPA A VARIAVEL DETECTS
+                if len(contours) == 0:
+                    detects.clear()
+                else:
+                    #ESTÁ PERCORRENDO CADA OBJETO DO ARRAY QUE OS DETECTOU 
+                    for detect in detects:
+                        #
+                        for (cod,posicao) in enumerate(detect):
+                            #SE PASSOU DA ESQUERDA PARA DIREIRA
+                            if detect[cod-1][0] < posL and posicao[0] > posL :
+                                detect.clear()
+                            #     direita+=1
+                                total+=1
+                                cv2.line(frame,xy1,xy2,(0,0,255),5)
+                                sql = "UPDATE producoes SET quantidade_producao = %s WHERE cod_producao = %s"
+                                val = (total, cod_producao)
+                                mycursor.execute(sql, val)
+                                mydb.commit()
+                                #print(total)
+                                continue
